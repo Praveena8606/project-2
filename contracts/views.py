@@ -39,3 +39,13 @@ class DocumentUploadView(generics.CreateAPIView):
                     )
                 }
             ) from error
+
+
+class DocumentListView(generics.ListAPIView):
+    queryset = Document.objects.all().order_by("-uploaded_at")
+    serializer_class = DocumentSerializer
+
+
+class DocumentDetailView(generics.RetrieveAPIView):
+    queryset = Document.objects.all()
+    serializer_class = DocumentSerializer   
