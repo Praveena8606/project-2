@@ -164,13 +164,6 @@ The upload API was tested successfully and stores uploaded PDF files in the loca
 
 ---
 
-## Next Phase (Week 2)
-
-- Integrate PyMuPDF (Fitz)
-- Extract text from uploaded PDF contracts
-- Store extracted contract text
-- Prepare data for clause extraction
-- Build contract processing pipeline
 
 ---
 
