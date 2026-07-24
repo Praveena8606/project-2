@@ -164,7 +164,34 @@ The upload API was tested successfully and stores uploaded PDF files in the loca
 
 ---
 
+## Week 2 Progress – PDF Text Extraction Pipeline
 
+### Completed Tasks
+
+- Installed and configured PyMuPDF.
+- Implemented PDF text extraction page by page.
+- Added text-cleaning logic to:
+  - remove extra whitespace
+  - fix broken line breaks
+  - join hyphenated words
+  - preserve paragraph structure
+- Added the `extracted_text` field to the `Document` model.
+- Stored extracted contract text in PostgreSQL.
+- Updated document processing status:
+  - Uploaded
+  - Processing
+  - Processed
+  - Failed
+- Added document list and detail APIs.
+- Added error handling for invalid and unreadable PDF files.
+- Added unit tests for the text-cleaning utility.
+
+### Week 2 API Endpoints
+
+```text
+POST /api/upload/
+GET /api/documents/
+GET /api/documents/<id>/
 ---
 
 ## Author
