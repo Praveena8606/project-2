@@ -14,8 +14,14 @@ class DocumentSerializer(serializers.ModelSerializer):
             "uploaded_file",
             "uploaded_at",
             "status",
+            "extracted_text",
         ]
-        read_only_fields = ["id", "uploaded_at", "status"]
+        read_only_fields = [
+            "id",
+            "uploaded_at",
+            "status",
+            "extracted_text",
+        ]
 
     def validate_uploaded_file(self, uploaded_file):
         extension = Path(uploaded_file.name).suffix.lower()
@@ -30,13 +36,6 @@ class DocumentSerializer(serializers.ModelSerializer):
         if uploaded_file.size > max_size:
             raise serializers.ValidationError(
                 "PDF file size must not exceed 10 MB."
-            )
-
-        content_type = getattr(uploaded_file, "content_type", "")
-
-        if content_type not in {"application/pdf", "application/x-pdf"}:
-            raise serializers.ValidationError(
-                "The uploaded file must have a valid PDF content type."
             )
 
         return uploaded_file
