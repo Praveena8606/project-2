@@ -49,3 +49,4 @@ class DocumentListView(generics.ListAPIView):
 class DocumentDetailView(generics.RetrieveAPIView):
     queryset = Document.objects.all()
     serializer_class = DocumentSerializer   
+
