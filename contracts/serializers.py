@@ -2,7 +2,7 @@ from pathlib import Path
 
 from rest_framework import serializers
 
-from .models import Document
+from .models import Document, ExtractedClause, RiskFlag
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -39,3 +39,29 @@ class DocumentSerializer(serializers.ModelSerializer):
             )
 
         return uploaded_file
+
+
+class ExtractedClauseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExtractedClause
+        fields = [
+            "id",
+            "document",
+            "clause_type",
+            "content",
+            "page_number",
+        ]
+        read_only_fields = ["id"]
+
+
+class RiskFlagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RiskFlag
+        fields = [
+            "id",
+            "document",
+            "keyword",
+            "severity",
+            "description",
+        ]
+        read_only_fields = ["id"]
