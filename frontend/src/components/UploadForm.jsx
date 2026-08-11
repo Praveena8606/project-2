@@ -1,8 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 
 function UploadForm() {
+  const navigate = useNavigate();
+
   const [title, setTitle] = useState("");
   const [pdfFile, setPdfFile] = useState(null);
   const [message, setMessage] = useState("");
@@ -22,6 +25,7 @@ function UploadForm() {
     }
 
     const formData = new FormData();
+
     formData.append("title", title);
     formData.append("uploaded_file", pdfFile);
 
@@ -34,17 +38,21 @@ function UploadForm() {
         formData,
       );
 
-      setMessage(
-        `Upload successful. Document status: ${response.data.status}`,
-      );
+      const documentId = response.data.id;
 
       setTitle("");
       setPdfFile(null);
       event.target.reset();
+
+      // Automatically open the analysis page
+      navigate(`/documents/${documentId}`);
     } catch (error) {
+      console.error("Upload error:", error);
+
       const apiError =
         error.response?.data?.uploaded_file?.[0] ||
         error.response?.data?.title?.[0] ||
+        error.response?.data?.detail ||
         "Upload failed. Please check the Django server.";
 
       setMessage(apiError);
@@ -66,14 +74,24 @@ function UploadForm() {
     >
       <h2>Upload Contract PDF</h2>
 
-      <div style={{ marginBottom: "18px", textAlign: "left" }}>
-        <label htmlFor="title">Document title</label>
+      <div
+        style={{
+          marginBottom: "18px",
+          textAlign: "left",
+        }}
+      >
+        <label htmlFor="title">
+          Document title
+        </label>
 
         <input
           id="title"
           type="text"
           value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          onChange={(event) => {
+            setTitle(event.target.value);
+          }}
+          placeholder="Enter contract title"
           style={{
             width: "100%",
             padding: "10px",
@@ -83,15 +101,24 @@ function UploadForm() {
         />
       </div>
 
-      <div style={{ marginBottom: "18px", textAlign: "left" }}>
-        <label htmlFor="uploaded-file">PDF file</label>
+      <div
+        style={{
+          marginBottom: "18px",
+          textAlign: "left",
+        }}
+      >
+        <label htmlFor="uploaded-file">
+          PDF file
+        </label>
 
         <input
           id="uploaded-file"
           type="file"
           accept=".pdf,application/pdf"
           onChange={(event) => {
-            setPdfFile(event.target.files[0] || null);
+            setPdfFile(
+              event.target.files[0] || null,
+            );
           }}
           style={{
             display: "block",
@@ -100,12 +127,21 @@ function UploadForm() {
         />
       </div>
 
-      <button type="submit" disabled={isUploading}>
-        {isUploading ? "Uploading..." : "Upload and Analyze"}
+      <button
+        type="submit"
+        disabled={isUploading}
+      >
+        {isUploading
+          ? "Analyzing..."
+          : "Upload and Analyze"}
       </button>
 
       {message && (
-        <p style={{ marginTop: "18px" }}>
+        <p
+          style={{
+            marginTop: "18px",
+          }}
+        >
           {message}
         </p>
       )}
