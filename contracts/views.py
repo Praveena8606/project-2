@@ -1,8 +1,12 @@
 from rest_framework import generics
 from rest_framework.exceptions import ValidationError
 
-from .models import Document
-from .serializers import DocumentSerializer
+from .models import Document, ExtractedClause, RiskFlag
+from .serializers import (
+    DocumentSerializer,
+    ExtractedClauseSerializer,
+    RiskFlagSerializer,
+)
 from .utils import extract_text_from_pdf
 
 
@@ -17,6 +21,11 @@ class DocumentUploadView(generics.CreateAPIView):
             extracted_text = extract_text_from_pdf(
                 document.uploaded_file.path
             )
+
+            if not extracted_text:
+                raise ValueError(
+                    "No readable text was found in the PDF."
+                )
 
             document.extracted_text = extracted_text
             document.status = "Processed"
@@ -35,7 +44,7 @@ class DocumentUploadView(generics.CreateAPIView):
                 {
                     "uploaded_file": (
                         "The PDF could not be processed. "
-                        "Please upload a valid PDF file."
+                        "Please upload a valid text-based PDF."
                     )
                 }
             ) from error
@@ -48,5 +57,26 @@ class DocumentListView(generics.ListAPIView):
 
 class DocumentDetailView(generics.RetrieveAPIView):
     queryset = Document.objects.all()
-    serializer_class = DocumentSerializer   
+    serializer_class = DocumentSerializer
 
+
+class DocumentClauseListView(generics.ListAPIView):
+    serializer_class = ExtractedClauseSerializer
+
+    def get_queryset(self):
+        document_id = self.kwargs["document_id"]
+
+        return ExtractedClause.objects.filter(
+            document_id=document_id
+        ).order_by("page_number", "id")
+
+
+class DocumentRiskListView(generics.ListAPIView):
+    serializer_class = RiskFlagSerializer
+
+    def get_queryset(self):
+        document_id = self.kwargs["document_id"]
+
+        return RiskFlag.objects.filter(
+            document_id=document_id
+        ).order_by("id")

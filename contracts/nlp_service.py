@@ -37,3 +37,44 @@ def extract_named_entities(text):
         "dates": list(set(dates)),
         "locations": list(set(locations))
     }
+def extract_legal_details(text: str) -> dict:
+    """
+    Extract governing law and jurisdiction from contract text.
+    """
+
+    if not text:
+        return {
+            "governing_law": None,
+            "jurisdiction": None,
+        }
+
+    lines = [
+        line.strip()
+        for line in text.split("\n")
+        if line.strip()
+    ]
+
+    governing_law = None
+    jurisdiction = None
+
+    for line in lines:
+        lower_line = line.lower()
+
+        if (
+            "governing law" in lower_line
+            or "governed by" in lower_line
+            or "laws of" in lower_line
+        ):
+            governing_law = line
+
+        if (
+            "jurisdiction" in lower_line
+            or "courts of" in lower_line
+            or "exclusive jurisdiction" in lower_line
+        ):
+            jurisdiction = line
+
+    return {
+        "governing_law": governing_law,
+        "jurisdiction": jurisdiction,
+    }
