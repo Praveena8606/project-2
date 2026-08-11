@@ -1,7 +1,9 @@
 from rest_framework import generics
 from rest_framework.exceptions import ValidationError
 
+from .clause_categorizer import extract_and_save_clauses
 from .models import Document, ExtractedClause, RiskFlag
+from .risk_detector import detect_risks
 from .serializers import (
     DocumentSerializer,
     ExtractedClauseSerializer,
@@ -18,17 +20,21 @@ class DocumentUploadView(generics.CreateAPIView):
         document = serializer.save(status="Processing")
 
         try:
+            # Step 1: Extract text from uploaded PDF
             extracted_text = extract_text_from_pdf(
                 document.uploaded_file.path
             )
 
+            # Step 2: Make sure text was extracted
             if not extracted_text:
                 raise ValueError(
                     "No readable text was found in the PDF."
                 )
 
+            # Step 3: Save extracted text
             document.extracted_text = extracted_text
             document.status = "Processed"
+
             document.save(
                 update_fields=[
                     "extracted_text",
@@ -36,9 +42,17 @@ class DocumentUploadView(generics.CreateAPIView):
                 ]
             )
 
+            # Step 4: Automatically extract and save clauses
+            extract_and_save_clauses(document)
+
+            # Step 5: Automatically detect and save risks
+            detect_risks(document)
+
         except Exception as error:
             document.status = "Failed"
-            document.save(update_fields=["status"])
+            document.save(
+                update_fields=["status"]
+            )
 
             raise ValidationError(
                 {
@@ -51,7 +65,9 @@ class DocumentUploadView(generics.CreateAPIView):
 
 
 class DocumentListView(generics.ListAPIView):
-    queryset = Document.objects.all().order_by("-uploaded_at")
+    queryset = Document.objects.all().order_by(
+        "-uploaded_at"
+    )
     serializer_class = DocumentSerializer
 
 
@@ -68,7 +84,10 @@ class DocumentClauseListView(generics.ListAPIView):
 
         return ExtractedClause.objects.filter(
             document_id=document_id
-        ).order_by("page_number", "id")
+        ).order_by(
+            "page_number",
+            "id",
+        )
 
 
 class DocumentRiskListView(generics.ListAPIView):
