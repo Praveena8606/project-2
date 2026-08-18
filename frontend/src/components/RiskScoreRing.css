@@ -1,0 +1,74 @@
+/* ── Risk Score Ring ───────────────────────────────────────── */
+.risk-score-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--navy-deep);
+  border: 1px solid var(--navy-border);
+  padding: 12px 20px;
+  border-radius: var(--radius-lg);
+}
+
+.risk-ring-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.risk-ring-svg {
+  transform: rotate(0deg);
+}
+
+.risk-ring-text {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.risk-ring-score {
+  font-family: var(--font-heading);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.risk-ring-max {
+  font-size: 9px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.risk-score-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.risk-score-badge {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.risk-ring--high .risk-score-badge {
+  color: var(--danger);
+}
+
+.risk-ring--medium .risk-score-badge {
+  color: var(--warn);
+}
+
+.risk-ring--low .risk-score-badge {
+  color: var(--success);
+}
+
+.risk-score-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}

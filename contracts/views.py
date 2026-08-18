@@ -1,7 +1,12 @@
-from rest_framework import generics
+from django.db.models import Count, Q
+from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from .clause_categorizer import extract_and_save_clauses
 from .models import Document, ExtractedClause, RiskFlag
+from .risk_detector import detect_risks
 from .serializers import (
     DocumentSerializer,
     ExtractedClauseSerializer,
@@ -18,17 +23,21 @@ class DocumentUploadView(generics.CreateAPIView):
         document = serializer.save(status="Processing")
 
         try:
+            # Step 1: Extract text from uploaded PDF
             extracted_text = extract_text_from_pdf(
                 document.uploaded_file.path
             )
 
+            # Step 2: Make sure text was extracted
             if not extracted_text:
                 raise ValueError(
                     "No readable text was found in the PDF."
                 )
 
+            # Step 3: Save extracted text
             document.extracted_text = extracted_text
             document.status = "Processed"
+
             document.save(
                 update_fields=[
                     "extracted_text",
@@ -36,9 +45,17 @@ class DocumentUploadView(generics.CreateAPIView):
                 ]
             )
 
+            # Step 4: Automatically extract and save clauses
+            extract_and_save_clauses(document)
+
+            # Step 5: Automatically detect and save risks
+            detect_risks(document)
+
         except Exception as error:
             document.status = "Failed"
-            document.save(update_fields=["status"])
+            document.save(
+                update_fields=["status"]
+            )
 
             raise ValidationError(
                 {
@@ -51,7 +68,9 @@ class DocumentUploadView(generics.CreateAPIView):
 
 
 class DocumentListView(generics.ListAPIView):
-    queryset = Document.objects.all().order_by("-uploaded_at")
+    queryset = Document.objects.all().order_by(
+        "-uploaded_at"
+    )
     serializer_class = DocumentSerializer
 
 
@@ -68,7 +87,10 @@ class DocumentClauseListView(generics.ListAPIView):
 
         return ExtractedClause.objects.filter(
             document_id=document_id
-        ).order_by("page_number", "id")
+        ).order_by(
+            "page_number",
+            "id",
+        )
 
 
 class DocumentRiskListView(generics.ListAPIView):
@@ -80,3 +102,48 @@ class DocumentRiskListView(generics.ListAPIView):
         return RiskFlag.objects.filter(
             document_id=document_id
         ).order_by("id")
+
+
+class DocumentDeleteView(generics.DestroyAPIView):
+    queryset = Document.objects.all()
+    serializer_class = DocumentSerializer
+
+
+class StatsView(APIView):
+    def get(self, request):
+        total_documents = Document.objects.count()
+        processed_documents = Document.objects.filter(status="Processed").count()
+        processing_documents = Document.objects.filter(status="Processing").count()
+        failed_documents = Document.objects.filter(status="Failed").count()
+
+        total_clauses = ExtractedClause.objects.count()
+        total_risks = RiskFlag.objects.count()
+
+        high_risks = RiskFlag.objects.filter(severity__iexact="High").count()
+        medium_risks = RiskFlag.objects.filter(severity__iexact="Medium").count()
+        low_risks = RiskFlag.objects.filter(severity__iexact="Low").count()
+
+        recent_documents = Document.objects.order_by("-uploaded_at")[:5]
+        recent_docs_serialized = DocumentSerializer(recent_documents, many=True).data
+
+        clause_type_counts = (
+            ExtractedClause.objects.values("clause_type")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:5]
+        )
+
+        return Response({
+            "total_documents": total_documents,
+            "processed_documents": processed_documents,
+            "processing_documents": processing_documents,
+            "failed_documents": failed_documents,
+            "total_clauses": total_clauses,
+            "total_risks": total_risks,
+            "risk_distribution": {
+                "high": high_risks,
+                "medium": medium_risks,
+                "low": low_risks,
+            },
+            "clause_distribution": list(clause_type_counts),
+            "recent_documents": recent_docs_serialized,
+        })
