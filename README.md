@@ -118,7 +118,74 @@ project-2/
 └── .gitignore
 
 ---
-
+## Project Architecture
+                    USER
+                     │
+                     ▼
+          ┌─────────────────────┐
+          │   React Frontend    │
+          │   React + Vite      │
+          │                     │
+          │ • Upload Contract   │
+          │ • Document List     │
+          │ • Analysis Page     │
+          │ • Risk Display      │
+          └──────────┬──────────┘
+                     │
+                   Axios
+                     │
+                     ▼
+          ┌─────────────────────┐
+          │   Django REST API   │
+          │                     │
+          │ POST /api/upload/   │
+          │ GET /api/documents/ │
+          │ GET /clauses/       │
+          │ GET /risks/         │
+          └──────────┬──────────┘
+                     │
+                     ▼
+          ┌─────────────────────┐
+          │ Document Processing │
+          │      PyMuPDF        │
+          │                     │
+          │ PDF → Extract Text  │
+          │ Clean Text          │
+          └──────────┬──────────┘
+                     │
+                     ▼
+          ┌─────────────────────┐
+          │     NLP Engine      │
+          │       spaCy         │
+          │                     │
+          │ • Organizations     │
+          │ • Dates             │
+          │ • Locations         │
+          │ • Governing Law     │
+          └──────────┬──────────┘
+                     │
+            ┌────────┴─────────┐
+            ▼                  ▼
+ ┌──────────────────┐   ┌──────────────────┐
+ │ Clause Extraction│   │  Risk Detection  │
+ │                  │   │                  │
+ │ • Payment        │   │ • High           │
+ │ • Confidentiality│   │ • Medium         │
+ │ • Liability      │   │ • Low            │
+ │ • Indemnity      │   │                  │
+ │ • Termination    │   │ Risk Keywords    │
+ │ • Governing Law  │   │ Detection        │
+ └────────┬─────────┘   └────────┬─────────┘
+          │                      │
+          └──────────┬───────────┘
+                     ▼
+          ┌─────────────────────┐
+          │     PostgreSQL      │
+          │                     │
+          │ Document            │
+          │ ExtractedClause     │
+          │ RiskFlag            │
+          └─────────────────────┘
 ## Technologies Used
 
 - Python 3.11

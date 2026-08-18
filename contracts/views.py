@@ -1,5 +1,8 @@
-from rest_framework import generics
+from django.db.models import Count, Q
+from rest_framework import generics, status
 from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .clause_categorizer import extract_and_save_clauses
 from .models import Document, ExtractedClause, RiskFlag
@@ -99,3 +102,48 @@ class DocumentRiskListView(generics.ListAPIView):
         return RiskFlag.objects.filter(
             document_id=document_id
         ).order_by("id")
+
+
+class DocumentDeleteView(generics.DestroyAPIView):
+    queryset = Document.objects.all()
+    serializer_class = DocumentSerializer
+
+
+class StatsView(APIView):
+    def get(self, request):
+        total_documents = Document.objects.count()
+        processed_documents = Document.objects.filter(status="Processed").count()
+        processing_documents = Document.objects.filter(status="Processing").count()
+        failed_documents = Document.objects.filter(status="Failed").count()
+
+        total_clauses = ExtractedClause.objects.count()
+        total_risks = RiskFlag.objects.count()
+
+        high_risks = RiskFlag.objects.filter(severity__iexact="High").count()
+        medium_risks = RiskFlag.objects.filter(severity__iexact="Medium").count()
+        low_risks = RiskFlag.objects.filter(severity__iexact="Low").count()
+
+        recent_documents = Document.objects.order_by("-uploaded_at")[:5]
+        recent_docs_serialized = DocumentSerializer(recent_documents, many=True).data
+
+        clause_type_counts = (
+            ExtractedClause.objects.values("clause_type")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:5]
+        )
+
+        return Response({
+            "total_documents": total_documents,
+            "processed_documents": processed_documents,
+            "processing_documents": processing_documents,
+            "failed_documents": failed_documents,
+            "total_clauses": total_clauses,
+            "total_risks": total_risks,
+            "risk_distribution": {
+                "high": high_risks,
+                "medium": medium_risks,
+                "low": low_risks,
+            },
+            "clause_distribution": list(clause_type_counts),
+            "recent_documents": recent_docs_serialized,
+        })
